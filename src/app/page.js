@@ -1,95 +1,111 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useEffect, useRef } from "react";
+import { Card } from "@/components/card";
+import { ReactLenis } from "@studio-freight/react-lenis";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
+  const container = useRef(null);
+  const cardRefs = useRef([]);
+
+  useGSAP(
+    () => {
+      const cards = cardRefs.current;
+      const totalScrollHeight = window.innerHeight * 3;
+      const positions = [14, 38, 62, 86];
+      const rotations = [-15, -7.5, 7.5, 15];
+
+      ScrollTrigger.create({
+        trigger: container.current.querySelector(".cards"),
+        start: "top top",
+        end: () => `+=${totalScrollHeight}`,
+        pin: true,
+        pinSpacing: true,
+      });
+
+      cards.forEach((card, index) => {
+        gsap.to(card, {
+          left: `${positions[index]}%`,
+          rotation: `${rotations[index]}`,
+          ease: "none",
+          scrollTrigger: {
+            trigger: container.current.querySelector(".cards"),
+            start: "top top",
+            end: () => `+=${window.innerHeight}`,
+            scrub: 0.5,
+            id: `spread-${index}`,
+          },
+        });
+      });
+
+      cards.forEach((card, index) => {
+        const frontEl = card.querySelector(".flip-card-front");
+        const backEl = card.querySelector(".flip-card-back");
+        const staggerOffset = index * 0.05;
+        const startOffset = 1 / 3 + staggerOffset;
+        const endOffset = 2 / 3 + staggerOffset;
+
+        ScrollTrigger.create({
+          trigger: container.current.querySelector(".cards"),
+          start: "top top",
+          end: () => `+=${totalScrollHeight}`,
+          scrub: 1,
+          id: `rotate-flip-${index}`,
+          onUpdate: (self) => {
+            const progress = self.progress;
+            if (progress >= startOffset && progress <= endOffset) {
+              const animationProgress = (progress - startOffset) / (1 / 3);
+              const frontRotation = -180 * animationProgress;
+              const backRotation = 180 - 180 * animationProgress;
+              const cardRotation = rotations[index] * (1 - animationProgress);
+
+              gsap.to(frontEl, { rotateY: frontRotation, ease: "power1.out" });
+              gsap.to(backEl, { rotateY: backRotation, ease: "power1.out" });
+              gsap.to(card, {
+                xPercent: -50,
+                yPercent: -50,
+                rotate: cardRotation,
+                ease: "power1.out",
+              });
+            }
+          }
+        });
+      });
+    },
+    { scope: container }
+  );
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <>
+      <ReactLenis root>
+        <div className="container" ref={container}>
+          <section className="hero">
+            <h1>
+              Keep Scrolling to <br /> reveal the cards
+            </h1>
+          </section>
+          <section className="cards">
+            {[...Array(4)].map((_, index) => (
+              <Card
+                key={index}
+                id={`card-${index + 1}`}
+                frontSrc="/card-front.jpg"
+                frontAlt="Card Image"
+                backText="Your card details appear here"
+                ref={(el) => (cardRefs.current[index] = el)}
+              />
+            ))}
+          </section>
+          <section className="footer">
+            <h1>Footer or Upcoming Section</h1>
+          </section>
         </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      </ReactLenis>
+    </>
   );
 }

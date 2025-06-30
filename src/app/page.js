@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Card } from "@/components/card";
 import { ReactLenis } from "@studio-freight/react-lenis";
 import gsap from "gsap";
@@ -10,7 +10,7 @@ import { useGSAP } from "@gsap/react";
 gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
-  const container = useRef(null);
+  const containerRef = useRef(null);
   const cardRefs = useRef([]);
 
   useGSAP(
@@ -20,29 +20,34 @@ export default function Home() {
       const positions = [14, 38, 62, 86];
       const rotations = [-15, -7.5, 7.5, 15];
 
+      const cardsContainer = containerRef.current?.querySelector(".cards");
+
+      // Pin the card container during scroll
       ScrollTrigger.create({
-        trigger: container.current.querySelector(".cards"),
+        trigger: cardsContainer,
         start: "top top",
-        end: () => `+=${totalScrollHeight}`,
+        end: `+=${totalScrollHeight}`,
         pin: true,
         pinSpacing: true,
       });
 
+      // Animate spread and rotation on scroll
       cards.forEach((card, index) => {
         gsap.to(card, {
           left: `${positions[index]}%`,
-          rotation: `${rotations[index]}`,
+          rotation: rotations[index],
           ease: "none",
           scrollTrigger: {
-            trigger: container.current.querySelector(".cards"),
+            trigger: cardsContainer,
             start: "top top",
-            end: () => `+=${window.innerHeight}`,
+            end: `+=${window.innerHeight}`,
             scrub: 0.5,
             id: `spread-${index}`,
           },
         });
       });
 
+      // Animate card flip
       cards.forEach((card, index) => {
         const frontEl = card.querySelector(".flip-card-front");
         const backEl = card.querySelector(".flip-card-back");
@@ -51,9 +56,9 @@ export default function Home() {
         const endOffset = 2 / 3 + staggerOffset;
 
         ScrollTrigger.create({
-          trigger: container.current.querySelector(".cards"),
+          trigger: cardsContainer,
           start: "top top",
-          end: () => `+=${totalScrollHeight}`,
+          end: `+=${totalScrollHeight}`,
           scrub: 1,
           id: `rotate-flip-${index}`,
           onUpdate: (self) => {
@@ -73,39 +78,39 @@ export default function Home() {
                 ease: "power1.out",
               });
             }
-          }
+          },
         });
       });
     },
-    { scope: container }
+    { scope: containerRef }
   );
 
   return (
-    <>
-      <ReactLenis root>
-        <div className="container" ref={container}>
-          <section className="hero">
-            <h1>
-              Keep Scrolling to <br /> reveal the cards
-            </h1>
-          </section>
-          <section className="cards">
-            {[...Array(4)].map((_, index) => (
-              <Card
-                key={index}
-                id={`card-${index + 1}`}
-                frontSrc="/card-front.jpg"
-                frontAlt="Card Image"
-                backText="Your card details appear here"
-                ref={(el) => (cardRefs.current[index] = el)}
-              />
-            ))}
-          </section>
-          <section className="footer">
-            <h1>Footer or Upcoming Section</h1>
-          </section>
-        </div>
-      </ReactLenis>
-    </>
+    <ReactLenis root>
+      <div className="container" ref={containerRef}>
+        <section className="hero">
+          <h1>
+            Keep Scrolling to <br /> reveal the cards
+          </h1>
+        </section>
+
+        <section className="cards">
+          {[...Array(4)].map((_, index) => (
+            <Card
+              key={index}
+              id={`card-${index + 1}`}
+              frontSrc="/card-front.jpg"
+              frontAlt="Card Image"
+              backText="Your card details appear here"
+              ref={(el) => (cardRefs.current[index] = el)}
+            />
+          ))}
+        </section>
+
+        <section className="footer">
+          <h1>Footer or Upcoming Section</h1>
+        </section>
+      </div>
+    </ReactLenis>
   );
 }
